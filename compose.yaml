@@ -1,0 +1,45 @@
+name: hermes-oncall-demo
+
+services:
+  redis:
+    image: redis:7.4.2-alpine@sha256:02419de7eddf55aa5bcf49efb74e88fa8d931b4d77c07eff8a6b2144472b6952
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - checkout-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 1s
+      retries: 10
+    restart: unless-stopped
+
+  checkout-api:
+    build: ./app
+    command: ["python", "app.py"]
+    environment:
+      REDIS_HOST: redis
+      WORKER_HEARTBEAT_MAX_AGE: "8"
+    ports:
+      - "127.0.0.1:8088:8080"
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=1)"]
+      interval: 2s
+      timeout: 1s
+      retries: 10
+    restart: unless-stopped
+
+  checkout-worker:
+    build: ./app
+    command: ["python", "worker.py"]
+    environment:
+      REDIS_HOST: redis
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  checkout-data:

@@ -1,0 +1,6 @@
+.demo-state/
+.env
+inference/.env
+inference/image-digest.txt
+*.log
+.DS_Store
