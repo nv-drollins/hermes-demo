@@ -1,0 +1,29 @@
+name: hermes-escape-room
+
+services:
+  control-room:
+    build: .
+    command: ["python", "control_room.py"]
+    environment:
+      DATA_DIR: /data
+      PUMP_URL: http://coolant-pump:8091/health
+    volumes:
+      - ../../.demo-state/escape-room:/data
+    ports:
+      - "127.0.0.1:8090:8090"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8090/health', timeout=1)"]
+      interval: 2s
+      timeout: 1s
+      retries: 20
+    restart: unless-stopped
+
+  coolant-pump:
+    build: .
+    command: ["python", "coolant_pump.py"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8091/health', timeout=1)"]
+      interval: 2s
+      timeout: 1s
+      retries: 10
+    restart: "no"

@@ -15,6 +15,11 @@ Nothing in the incident flow is simulated: Redis, the checkout API, the worker, 
 
 The model and checkout APIs bind to localhost only. Telegram is the remote interface.
 
+## Included demos
+
+- **[Private On-Call Agent](DEMO.md):** detect two real checkout outages, repair them safely, learn a service-triage runbook, and reuse it.
+- **[Hermes Escape Room](demos/escape-room/DEMO.md):** solve live log, container, file-decoding, and HTTP puzzles, learn the generalized escape procedure, then solve a new mission with different clues.
+
 ## Tested pins
 
 | Component | Pin |
@@ -143,9 +148,18 @@ hermes cron list
 journalctl --user -u hermes-gateway.service -f
 ~~~
 
+The escape room has its own isolated lifecycle:
+
+~~~bash
+./demos/escape-room/start.sh
+./demos/escape-room/status.sh
+./demos/escape-room/restart.sh
+./demos/escape-room/stop.sh
+~~~
+
 ## Safety boundaries
 
-- Ports 8000 and 8088 bind only to 127.0.0.1.
+- Ports 8000, 8088, and 8090 bind only to 127.0.0.1.
 - The Telegram bot is restricted by numeric user ID.
 - Hermes skill and memory writes require approval.
 - Fault scripts stop a dependency; they do not delete volumes or data.
@@ -190,4 +204,4 @@ Authentication errors usually mean a bad Hugging Face token or unaccepted terms.
 
 Keep shared inference and Hermes infrastructure at the root. Add future scenarios under directories such as demos/docs-drift or demos/coding-loop, each with its own Compose project name, localhost ports, prepare/incident/reset/preflight scripts, cron job name, .demo-state namespace, and presenter guide.
 
-Good next additions are docs-drift/PR review and an agentic coding loop. Both can reuse the same local Qwen endpoint and Telegram gateway without duplicating the large model container.
+The escape room follows this layout under `demos/escape-room`. Good next additions are docs-drift/PR review and an agentic coding loop. Both can reuse the same local Qwen endpoint and Telegram gateway without duplicating the large model container.
