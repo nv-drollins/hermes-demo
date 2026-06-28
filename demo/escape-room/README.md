@@ -15,15 +15,15 @@ Each room reveals a mission-specific rune. Joining the runes opens the vault thr
 From the repository root:
 
 ```bash
-./demos/escape-room/start.sh       # start/reset round 1
-./demos/escape-room/start.sh 2     # start/reset round 2
-./demos/escape-room/reset.sh 2     # reset a running stack to round 2
-./demos/escape-room/status.sh
-./demos/escape-room/restart.sh 1
-./demos/escape-room/stop.sh
+./demo/escape-room/start.sh       # start/reset round 1
+./demo/escape-room/start.sh 2     # start/reset round 2
+./demo/escape-room/reset.sh 2     # reset a running stack to round 2
+./demo/escape-room/status.sh
+./demo/escape-room/restart.sh 1
+./demo/escape-room/stop.sh
 ```
 
-Before presenting, use `./demos/escape-room/prepare-demo.sh`. Follow [DEMO.md](DEMO.md) for the live sequence.
+Before presenting, use `./demo/escape-room/prepare-demo.sh`. Follow [DEMO.md](DEMO.md) for the live sequence.
 
 ## Integrity rules
 

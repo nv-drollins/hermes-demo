@@ -11,14 +11,14 @@ Nothing in the incident flow is simulated: Redis, the checkout API, the worker, 
 - A three-service checkout stack: API, Redis, and worker
 - A deterministic Hermes cron watchdog that alerts only on health-state changes
 - Fault injection, recovery, preflight, and clean-demo reset scripts
-- The [three-minute presenter runbook](DEMO.md)
+- The [three-minute presenter runbook](demo/container-monitor/DEMO.md)
 
 The model and checkout APIs bind to localhost only. Telegram is the remote interface.
 
 ## Included demos
 
-- **[Private On-Call Agent](DEMO.md):** detect two real checkout outages, repair them safely, learn a service-triage runbook, and reuse it.
-- **[Hermes Escape Room](demos/escape-room/DEMO.md):** solve live log, container, file-decoding, and HTTP puzzles, learn the generalized escape procedure, then solve a new mission with different clues.
+- **[Private On-Call Agent](demo/container-monitor/DEMO.md):** detect two real checkout outages, repair them safely, learn a service-triage runbook, and reuse it.
+- **[Hermes Escape Room](demo/escape-room/DEMO.md):** solve live log, container, file-decoding, and HTTP puzzles, learn the generalized escape procedure, then solve a new mission with different clues.
 
 ## Tested pins
 
@@ -116,15 +116,15 @@ Stages may also be run independently:
 Prepare a clean presentation state:
 
 ~~~bash
-./scripts/prepare-demo.sh
+./demo/container-monitor/prepare-demo.sh
 ~~~
 
 This archives any prior checkout-service-triage skill under .demo-state, restores services, resets the healthy monitor baseline, restarts the gateway, and runs preflight checks. It does not delete the archived skill.
 
-Send /new to the Telegram bot and follow [DEMO.md](DEMO.md). Trigger the watchdog without knowing its generated job ID:
+Send /new to the Telegram bot and follow the [container monitor presenter guide](demo/container-monitor/DEMO.md). Trigger the watchdog without knowing its generated job ID:
 
 ~~~bash
-./scripts/run-monitor.sh
+./demo/container-monitor/run-monitor.sh
 ~~~
 
 The scheduled watchdog also runs every 60 minutes. It uses no LLM tokens: empty output is silent, while a changed incident or recovery state is sent directly to Telegram.
@@ -132,15 +132,15 @@ The scheduled watchdog also runs every 60 minutes. It uses no LLM tokens: empty 
 ## Everyday operations
 
 ~~~bash
-./scripts/status.sh
-./scripts/reset-demo.sh
-./scripts/prepare-demo.sh
+./demo/container-monitor/start.sh
+./demo/container-monitor/status.sh
+./demo/container-monitor/reset.sh
+./demo/container-monitor/prepare-demo.sh
+./demo/container-monitor/restart.sh
+./demo/container-monitor/stop.sh
 
 docker compose --env-file inference/.env -f inference/compose.yaml stop
 docker compose --env-file inference/.env -f inference/compose.yaml up -d
-
-docker compose stop
-docker compose up -d
 
 hermes status
 hermes gateway status
@@ -148,13 +148,15 @@ hermes cron list
 journalctl --user -u hermes-gateway.service -f
 ~~~
 
+Stopping the container monitor demo also removes its `checkout-health` cron job. Starting or restarting it recreates the job and records a healthy notification baseline; checkout containers and Redis data are preserved.
+
 The escape room has its own isolated lifecycle:
 
 ~~~bash
-./demos/escape-room/start.sh
-./demos/escape-room/status.sh
-./demos/escape-room/restart.sh
-./demos/escape-room/stop.sh
+./demo/escape-room/start.sh
+./demo/escape-room/status.sh
+./demo/escape-room/restart.sh
+./demo/escape-room/stop.sh
 ~~~
 
 ## Safety boundaries
@@ -180,7 +182,7 @@ Confirm your numeric ID is allowed. Never paste the bot token into logs, issues,
 
 ### The alert did not arrive
 
-Run ./scripts/run-monitor.sh. The monitor intentionally sends nothing when health has not changed. prepare-demo.sh records a healthy baseline so the first incident changes state. Confirm TELEGRAM_HOME_CHANNEL is the intended private user or group chat ID.
+Run ./demo/container-monitor/run-monitor.sh. The monitor intentionally sends nothing when health has not changed. prepare-demo.sh records a healthy baseline so the first incident changes state. Confirm TELEGRAM_HOME_CHANNEL is the intended private user or group chat ID.
 
 ### A newly approved skill is not a command
 
@@ -188,7 +190,7 @@ After /skills approve ID, send /reload_skills. Telegram commands use underscores
 
 ### Approval says content is required for create
 
-Repeat the creation prompt in DEMO.md. It explicitly requires complete SKILL.md text in the content field, not file_content.
+Repeat the creation prompt in demo/container-monitor/DEMO.md. It explicitly requires complete SKILL.md text in the content field, not file_content.
 
 ### Qwen does not start
 
@@ -202,6 +204,6 @@ Authentication errors usually mean a bad Hugging Face token or unaccepted terms.
 
 ## Adding more demos
 
-Keep shared inference and Hermes infrastructure at the root. Add future scenarios under directories such as demos/docs-drift or demos/coding-loop, each with its own Compose project name, localhost ports, prepare/incident/reset/preflight scripts, cron job name, .demo-state namespace, and presenter guide.
+Keep shared inference and Hermes infrastructure at the root. Add future scenarios under directories such as `demo/docs-drift` or `demo/coding-loop`, each with its own Compose project name, localhost ports, prepare/incident/reset/preflight scripts, cron job name, .demo-state namespace, and presenter guide.
 
-The escape room follows this layout under `demos/escape-room`. Good next additions are docs-drift/PR review and an agentic coding loop. Both can reuse the same local Qwen endpoint and Telegram gateway without duplicating the large model container.
+The escape room follows this layout under `demo/escape-room`. Good next additions are docs-drift/PR review and an agentic coding loop. Both can reuse the same local Qwen endpoint and Telegram gateway without duplicating the large model container.

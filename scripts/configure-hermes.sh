@@ -50,29 +50,12 @@ hermes config set skills.write_approval true
 hermes config set memory.write_approval true
 hermes config set cron.mirror_delivery true
 
-mkdir -p "$HOME/.hermes/scripts"
-wrapper="$HOME/.hermes/scripts/checkout-notify.sh"
-printf '#!/usr/bin/env bash\nset -euo pipefail\nexec %q\n' "$ROOT/scripts/monitor-notify.sh" > "$wrapper"
-chmod 700 "$wrapper"
-
 if command -v loginctl >/dev/null 2>&1 && command -v sudo >/dev/null 2>&1; then
   sudo -n loginctl enable-linger "$USER" 2>/dev/null || echo "WARN could not enable user lingering; gateway may stop after logout."
 fi
 hermes gateway install
 hermes gateway restart
 
-jobs_file="$HOME/.hermes/cron/jobs.json"
-job_id=""
-if [[ -f "$jobs_file" ]]; then
-  job_id="$(jq -r '.jobs[] | select(.name == "checkout-health") | .id' "$jobs_file" | head -1)"
-fi
-if [[ -z "$job_id" ]]; then
-  hermes cron create 60m --name checkout-health --deliver telegram \
-    --script checkout-notify.sh --no-agent --workdir "$ROOT"
-  job_id="$(jq -r '.jobs[] | select(.name == "checkout-health") | .id' "$jobs_file" | head -1)"
-fi
-[[ -n "$job_id" ]] || { echo "Unable to locate checkout-health cron job." >&2; exit 1; }
-mkdir -p "$ROOT/.demo-state"
-printf '%s\n' "$job_id" > "$ROOT/.demo-state/cron-job-id"
+"$ROOT/scripts/ensure-container-monitor-cron.sh"
 
-echo "Hermes and Telegram gateway configured. checkout-health job: $job_id"
+echo "Hermes, Telegram gateway, and container monitor cron configured."
