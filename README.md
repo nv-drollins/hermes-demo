@@ -111,7 +111,13 @@ Stages may also be run independently:
 ./scripts/configure-hermes.sh
 ~~~
 
-## Run the demo
+## Demos
+
+Both demos use the shared local Qwen/vLLM endpoint and Hermes Telegram gateway configured during setup.
+
+### Container Monitor
+
+This professional on-call demo detects real checkout outages, guides Hermes through safe recovery, creates a reusable triage skill, and reuses it for a second incident.
 
 Prepare a clean presentation state:
 
@@ -119,26 +125,56 @@ Prepare a clean presentation state:
 ./demo/container-monitor/prepare-demo.sh
 ~~~
 
-This archives any prior checkout-service-triage skill under .demo-state, restores services, resets the healthy monitor baseline, restarts the gateway, and runs preflight checks. It does not delete the archived skill.
+This archives any prior `checkout-service-triage` skill under `.demo-state`, restores the checkout services, resets the healthy monitor baseline, restarts the gateway, and runs preflight checks. It does not delete the archived skill.
 
-Send /new to the Telegram bot and follow the [container monitor presenter guide](demo/container-monitor/DEMO.md). Trigger the watchdog without knowing its generated job ID:
+Send `/new` to the Telegram bot and follow the [Container Monitor presenter guide](demo/container-monitor/DEMO.md). To trigger the watchdog immediately instead of waiting for its hourly schedule:
 
 ~~~bash
 ./demo/container-monitor/run-monitor.sh
 ~~~
 
-The scheduled watchdog also runs every 60 minutes. It uses no LLM tokens: empty output is silent, while a changed incident or recovery state is sent directly to Telegram.
+The watchdog uses no LLM tokens: empty output is silent, while a changed incident or recovery state is sent directly to Telegram.
 
-## Everyday operations
+Container Monitor lifecycle commands:
 
 ~~~bash
 ./demo/container-monitor/start.sh
 ./demo/container-monitor/status.sh
 ./demo/container-monitor/reset.sh
-./demo/container-monitor/prepare-demo.sh
 ./demo/container-monitor/restart.sh
 ./demo/container-monitor/stop.sh
+~~~
 
+`stop.sh` stops the checkout services and removes the `checkout-health` cron job while preserving containers and Redis data. `start.sh` and `restart.sh` recreate exactly one recurring watchdog and record a healthy notification baseline.
+
+### Escape Room
+
+This playful demo has Hermes solve three live challenges using container logs, a stopped coolant service, an encoded navigation file, and HTTP APIs. It then learns the generalized procedure and attempts a second round with different clues.
+
+Prepare a clean presentation state:
+
+~~~bash
+./demo/escape-room/prepare-demo.sh
+~~~
+
+Open `http://127.0.0.1:8090`, send `/new` to the Telegram bot, and follow the [Escape Room presenter guide](demo/escape-room/DEMO.md). The clock waits at `00:00` for the first unlock, freezes when the vault opens, and compares both round times after round two.
+
+Escape Room lifecycle commands:
+
+~~~bash
+./demo/escape-room/start.sh 1
+./demo/escape-room/status.sh
+./demo/escape-room/reset.sh 1
+./demo/escape-room/reset.sh 2
+./demo/escape-room/restart.sh 1
+./demo/escape-room/stop.sh
+~~~
+
+`prepare-demo.sh` archives an existing `escape-room-operator` skill for a cold demonstration. Use `reset.sh 1` instead when you want to reset the puzzle while retaining the learned skill.
+
+## Shared operations
+
+~~~bash
 docker compose --env-file inference/.env -f inference/compose.yaml stop
 docker compose --env-file inference/.env -f inference/compose.yaml up -d
 
@@ -146,17 +182,6 @@ hermes status
 hermes gateway status
 hermes cron list
 journalctl --user -u hermes-gateway.service -f
-~~~
-
-Stopping the container monitor demo also removes its `checkout-health` cron job. Starting or restarting it recreates the job and records a healthy notification baseline; checkout containers and Redis data are preserved.
-
-The escape room has its own isolated lifecycle:
-
-~~~bash
-./demo/escape-room/start.sh
-./demo/escape-room/status.sh
-./demo/escape-room/restart.sh
-./demo/escape-room/stop.sh
 ~~~
 
 ## Safety boundaries
