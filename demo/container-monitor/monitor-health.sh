@@ -1,14 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-STATE_DIR="$ROOT/.demo-state"
+DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT="$(cd "$DIR/../.." && pwd)"
+STATE_DIR="$ROOT/.demo-state/container-monitor"
 STATE_FILE="$STATE_DIR/last-health.sha256"
 mkdir -p "$STATE_DIR"
-cd "$ROOT"
 
 body="$(curl -sS --max-time 3 http://127.0.0.1:8088/ready 2>&1 || true)"
 http_code="$(curl -sS -o /dev/null --max-time 3 -w '%{http_code}' http://127.0.0.1:8088/ready 2>/dev/null || true)"
-compose_state="$(docker compose ps --format json 2>&1 || true)"
 summary="HTTP=$http_code READY=$body"
 current_hash="$(printf '%s' "$summary" | sha256sum | cut -d' ' -f1)"
 previous_hash="$(cat "$STATE_FILE" 2>/dev/null || true)"
@@ -25,6 +24,6 @@ else
   echo "INCIDENT: checkout readiness check returned HTTP $http_code"
 fi
 echo "$body"
-docker compose ps
+docker compose -f "$DIR/compose.yaml" ps
 echo "RECENT_LOGS"
-docker compose logs --no-color --tail=20 checkout-api checkout-worker redis 2>&1
+docker compose -f "$DIR/compose.yaml" logs --no-color --tail=20 checkout-api checkout-worker redis 2>&1

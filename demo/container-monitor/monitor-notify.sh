@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-STATE_DIR="$ROOT/.demo-state"
+DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT="$(cd "$DIR/../.." && pwd)"
+STATE_DIR="$ROOT/.demo-state/container-monitor"
 STATE_FILE="$STATE_DIR/last-health.sha256"
 mkdir -p "$STATE_DIR"
 

@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 jobs_file="$HOME/.hermes/cron/jobs.json"
 [[ -f "$jobs_file" ]] || { echo "Hermes cron configuration not found." >&2; exit 1; }
 
 job_id="$(jq -r '.jobs[] | select(.name == "checkout-health" and .enabled == true) | .id' "$jobs_file" | head -1)"
 [[ -n "$job_id" ]] || {
-  echo "No enabled checkout-health job found. Run ./scripts/configure-hermes.sh." >&2
+  echo "No enabled checkout-health job found. Run ./demo/container-monitor/start.sh." >&2
   exit 1
 }
 mkdir -p "$ROOT/.demo-state"
