@@ -50,6 +50,10 @@ hermes config set skills.write_approval true
 hermes config set memory.write_approval true
 hermes config set cron.mirror_delivery true
 
+# Keep the local model's Telegram prompt focused on the tools used by these
+# demos. A smaller tool catalog materially improves structured tool calling.
+hermes config set platform_toolsets.telegram '["terminal","file","skills"]'
+
 if command -v loginctl >/dev/null 2>&1 && command -v sudo >/dev/null 2>&1; then
   sudo -n loginctl enable-linger "$USER" 2>/dev/null || echo "WARN could not enable user lingering; gateway may stop after logout."
 fi

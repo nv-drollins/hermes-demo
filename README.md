@@ -94,7 +94,7 @@ After the host prerequisites and .env are ready:
 ./scripts/setup-all.sh
 ~~~
 
-This checks the host, installs the pinned Hermes commit, starts the pinned Qwen/vLLM stack, configures the local model endpoint, copies only the four required credentials to the private Hermes environment, installs the Telegram gateway, creates the hourly no-agent watchdog, and builds the checkout services.
+This checks the host, installs the pinned Hermes commit, starts the pinned Qwen/vLLM stack, configures the local model endpoint, copies only the four required credentials to the private Hermes environment, limits Telegram to the terminal, file, and skills toolsets for reliable local-model tool calling, installs the Telegram gateway, creates the hourly no-agent watchdog, and builds the checkout services.
 
 The first model download can take a while. To follow it:
 
@@ -163,7 +163,7 @@ The preparation script archives any prior checkout triage skill under `.demo-sta
 
 4. Send this prompt in Telegram:
 
-   > Checkout is unhealthy. Diagnose it, restore service safely, and verify the repair using the `/ready` endpoint as the authoritative health signal. All Docker Compose commands must use `-f demo/container-monitor/compose.yaml`. You may start a dependency only if it is currently stopped. Do not stop, kill, restart, remove, recreate, or replace any running container. Do not delete data. Historical log errors alone are not evidence of a current failure.
+   > Checkout is unhealthy. Diagnose it, restore service safely, and verify the repair using the `/ready` endpoint as the authoritative health signal. Make exactly one tool call per response and wait for its result before making the next tool call; do not batch or parallelize tool calls, and do not print tool names or tool-call markup as text. Begin with one terminal call that runs `docker compose -f demo/container-monitor/compose.yaml ps --all`. All Docker Compose commands must use `-f demo/container-monitor/compose.yaml`. You may start a dependency only if it is currently stopped. Do not stop, kill, restart, remove, recreate, or replace any running container. Do not delete data. Historical log errors alone are not evidence of a current failure.
 
 5. After Hermes repairs Redis, send:
 
@@ -201,7 +201,7 @@ The preparation script archives any prior checkout triage skill under `.demo-sta
 
 12. Invoke the learned skill in Telegram:
 
-    > /checkout_service_triage A new checkout incident is active. Diagnose it, restore service safely, and verify the repair using the `/ready` endpoint as the authoritative health signal. All Docker Compose commands must use `-f demo/container-monitor/compose.yaml`. You may start a dependency only if it is currently stopped. Do not stop, kill, restart, remove, recreate, or replace any running container. Do not delete data. Historical log errors alone are not evidence of a current failure.
+    > /checkout_service_triage A new checkout incident is active. Diagnose it, restore service safely, and verify the repair using the `/ready` endpoint as the authoritative health signal. Make exactly one tool call per response and wait for its result before making the next tool call; do not batch or parallelize tool calls, and do not print tool names or tool-call markup as text. Begin with one terminal call that runs `docker compose -f demo/container-monitor/compose.yaml ps --all`. All Docker Compose commands must use `-f demo/container-monitor/compose.yaml`. You may start a dependency only if it is currently stopped. Do not stop, kill, restart, remove, recreate, or replace any running container. Do not delete data. Historical log errors alone are not evidence of a current failure.
 
 13. Show that Hermes loads the learned skill, starts only the stopped worker, and verifies that `/ready` returns HTTP 200 with both dependencies up.
 
