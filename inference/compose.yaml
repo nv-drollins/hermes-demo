@@ -41,8 +41,6 @@ services:
       - --enable-chunked-prefill
       - --async-scheduling
       - --enable-prefix-caching
-      - --speculative-config
-      - '{"method":"mtp","num_speculative_tokens":3,"moe_backend":"triton"}'
       - --load-format
       - fastsafetensors
       - --reasoning-parser
@@ -51,5 +49,9 @@ services:
       - qwen3_xml
       - --default-chat-template-kwargs
       - '{"enable_thinking":false}'
+      - --generation-config
+      - vllm
+      - --override-generation-config
+      - '{"temperature":0.0}'
       - --enable-auto-tool-choice
     restart: unless-stopped

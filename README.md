@@ -29,7 +29,7 @@ The model and checkout APIs bind to localhost only. Telegram is the remote inter
 | Qwen model/tokenizer | 491c2f1ea524c639598bf8fa787a93fed5a6fbce |
 | Redis | redis:7.4.2-alpine pinned by digest |
 | Context length | 262,144 tokens |
-| Qwen thinking mode | Disabled server-side for deterministic demo tool calls |
+| Reliability mode | Thinking and speculative decoding disabled; temperature 0 |
 
 The Qwen NVFP4 format and its ARM vLLM image are still an experimental combination. These pins are known to work together; do not swap in a mutable nightly image immediately before a presentation.
 
