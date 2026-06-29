@@ -49,5 +49,7 @@ services:
       - qwen3
       - --tool-call-parser
       - qwen3_xml
+      - --default-chat-template-kwargs
+      - '{"enable_thinking":false}'
       - --enable-auto-tool-choice
     restart: unless-stopped
