@@ -3,6 +3,7 @@
 ## Before going on stage
 
 1. Run `./demo/escape-room/prepare-demo.sh` from the repository root.
+   This also enables skill-write approval and restricts Telegram to the terminal, file, and skills toolsets.
 2. Open `http://127.0.0.1:8090` in a browser and leave the dashboard visible.
    Confirm the action clock is waiting at `00:00`.
 3. Send `/new` to Hermes in Telegram.

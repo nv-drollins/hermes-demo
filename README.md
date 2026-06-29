@@ -142,7 +142,7 @@ This triggers the same cron job immediately, so you can show incident and recove
 2. Send one harmless warm-up tool task to Hermes in Telegram.
 3. Confirm no `checkout-service-triage` skill exists.
 
-The preparation script archives any prior checkout triage skill under `.demo-state`, restores the services, creates the hourly watchdog, records a healthy notification baseline, restarts the gateway, and runs preflight checks.
+The preparation script archives any prior checkout triage skill under `.demo-state`, restores the services, enables skill-write approval, restricts Telegram to the demo toolsets, creates the hourly watchdog, records a healthy notification baseline, restarts the gateway, and runs preflight checks.
 
 #### Live sequence
 
@@ -288,7 +288,7 @@ Point out that all calibration values, navigation data, and runes changed. Herme
 ./demo/escape-room/stop.sh       # stop the demo
 ~~~
 
-`prepare-demo.sh` archives an existing `escape-room-operator` skill for a completely cold demonstration. Use `reset.sh 1` when you want to reset the puzzle while retaining the learned skill.
+`prepare-demo.sh` archives an existing `escape-room-operator` skill for a completely cold demonstration. It also enables skill-write approval and restricts Telegram to the demo toolsets. Use `reset.sh 1` when you want to reset the puzzle while retaining the learned skill.
 
 If an approved skill is not recognized, send `/reload_skills`. Telegram uses `/escape_room_operator`, with underscores, even though the canonical skill directory is hyphenated.
 

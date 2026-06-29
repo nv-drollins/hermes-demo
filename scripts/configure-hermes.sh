@@ -46,13 +46,10 @@ hermes config set model.base_url http://127.0.0.1:8000/v1
 hermes config set model.context_length 262144
 hermes config set terminal.cwd "$ROOT"
 hermes config set terminal.timeout 180
-hermes config set skills.write_approval true
 hermes config set memory.write_approval true
 hermes config set cron.mirror_delivery true
 
-# Keep the local model's Telegram prompt focused on the tools used by these
-# demos. A smaller tool catalog materially improves structured tool calling.
-hermes config set platform_toolsets.telegram '["terminal","file","skills"]'
+"$ROOT/scripts/configure-demo-hermes.sh"
 
 if command -v loginctl >/dev/null 2>&1 && command -v sudo >/dev/null 2>&1; then
   sudo -n loginctl enable-linger "$USER" 2>/dev/null || echo "WARN could not enable user lingering; gateway may stop after logout."

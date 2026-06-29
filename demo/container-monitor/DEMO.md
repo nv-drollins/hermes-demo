@@ -3,6 +3,7 @@
 ## Before going on stage
 
 1. Run `./demo/container-monitor/prepare-demo.sh`.
+   This also enables skill-write approval and restricts Telegram to the terminal, file, and skills toolsets.
 2. Send one harmless warm-up tool task to Hermes in Telegram.
 3. Confirm no `checkout-service-triage` skill exists.
 

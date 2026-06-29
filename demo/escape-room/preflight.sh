@@ -22,6 +22,21 @@ echo "PASS coolant-pump stopped"
 systemctl --user is-active --quiet hermes-gateway.service
 echo "PASS Hermes gateway active"
 
+python3 - "$HOME/.hermes/config.yaml" <<'PY'
+import sys
+import yaml
+
+with open(sys.argv[1], encoding="utf-8") as handle:
+    config = yaml.safe_load(handle) or {}
+
+assert config.get("skills", {}).get("write_approval") is True
+toolsets = config.get("platform_toolsets", {}).get("telegram")
+assert isinstance(toolsets, list)
+assert {"terminal", "file", "skills"}.issubset(toolsets)
+assert "hermes-telegram" not in toolsets
+PY
+echo "PASS skill approval on and Telegram demo tools restricted"
+
 if find "$HOME/.hermes/skills" -type d -iname '*escape*room*operator*' -print -quit | grep -q .; then
   echo "FAIL escape-room-operator skill already exists"
   exit 1
