@@ -3,16 +3,20 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 SKILL_NAME="checkout-service-triage"
-SKILL_DIR="$HOME/.hermes/skills/$SKILL_NAME"
+SKILLS_DIR="$HOME/.hermes/skills"
 PENDING_DIR="$HOME/.hermes/pending/skills"
 stamp="$(date -u +%Y%m%dT%H%M%SZ)"
 backup="$ROOT/.demo-state/container-monitor-skill-backups/$stamp"
 archived=false
 
-if [[ -d "$SKILL_DIR" ]]; then
-  mkdir -p "$backup/skills"
-  mv "$SKILL_DIR" "$backup/skills/"
-  archived=true
+if [[ -d "$SKILLS_DIR" ]]; then
+  while IFS= read -r -d '' skill_dir; do
+    relative="${skill_dir#"$SKILLS_DIR"/}"
+    destination="$backup/skills/$(dirname "$relative")"
+    mkdir -p "$destination"
+    mv "$skill_dir" "$destination/"
+    archived=true
+  done < <(find "$SKILLS_DIR" -type d -name "$SKILL_NAME" -print0)
 fi
 
 if [[ -d "$PENDING_DIR" ]]; then

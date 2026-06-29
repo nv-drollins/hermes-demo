@@ -10,6 +10,8 @@
 
 1. Show that Qwen is local and the checkout stack is healthy.
 2. Run `./demo/container-monitor/incident-redis.sh`.
+
+   Expected: `/ready` returns HTTP 503 and may show both Redis and the worker down. The worker container is still running; its heartbeat depends on Redis. Redis is the root cause and should be the only service started.
 3. Run `./demo/container-monitor/run-monitor.sh` and show its Telegram alert.
 4. Send: "Checkout is unhealthy. Diagnose it, restore service safely, and verify the repair using the `/ready` endpoint as the authoritative health signal. All Docker Compose commands must use `-f demo/container-monitor/compose.yaml`. You may start a dependency only if it is currently stopped. Do not stop, kill, restart, remove, recreate, or replace any running container. Do not delete data. Historical log errors alone are not evidence of a current failure."
 5. Send: "Turn the successful procedure into a reusable checkout-service-triage skill. Include health checks, log inspection, dependency recovery, safety boundaries, and post-repair verification. Use `skill_manage` with action `create`, placing the complete SKILL.md frontmatter and body in the `content` parameter—not `file_content`. Recovery may use `docker compose -f demo/container-monitor/compose.yaml start <stopped-service>` only for a stopped service, never `docker compose up`, and must not stop, kill, restart, remove, recreate, or replace a running container."

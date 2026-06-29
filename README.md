@@ -113,64 +113,184 @@ Stages may also be run independently:
 
 ## Demos
 
-Both demos use the shared local Qwen/vLLM endpoint and Hermes Telegram gateway configured during setup.
+Both demos use the shared local Qwen/vLLM endpoint and Hermes Telegram gateway configured during setup. The instructions below are complete; the individual presenter guides remain available as shorter standalone references.
 
 ### Container Monitor
 
-This professional on-call demo detects real checkout outages, guides Hermes through safe recovery, creates a reusable triage skill, and reuses it for a second incident.
+This professional on-call demo detects real checkout outages, guides Hermes through safe recovery, creates a reusable triage skill, and reuses it for a second incident. The standalone guide is [demo/container-monitor/DEMO.md](demo/container-monitor/DEMO.md).
 
-Prepare a clean presentation state:
+#### Watchdog and cron behavior
 
-~~~bash
-./demo/container-monitor/prepare-demo.sh
-~~~
+`prepare-demo.sh` calls `start.sh`, which creates or validates one recurring Hermes cron job named `checkout-health`. It runs every 60 minutes in no-agent mode and sends Telegram output only when the checkout health state changes.
 
-This archives any prior `checkout-service-triage` skill under `.demo-state`, restores the checkout services, resets the healthy monitor baseline, restarts the gateway, and runs preflight checks. It does not delete the archived skill.
-
-Send `/new` to the Telegram bot and follow the [Container Monitor presenter guide](demo/container-monitor/DEMO.md). To trigger the watchdog immediately instead of waiting for its hourly schedule:
+The live sequence uses:
 
 ~~~bash
 ./demo/container-monitor/run-monitor.sh
 ~~~
 
-The watchdog uses no LLM tokens: empty output is silent, while a changed incident or recovery state is sent directly to Telegram.
+This triggers the same cron job immediately, so you can show incident and recovery notifications without waiting for the hourly schedule. `stop.sh` removes the cron job; `start.sh` or `restart.sh` recreates it.
 
-Container Monitor lifecycle commands:
+#### Before going on stage
+
+1. Run:
+
+   ~~~bash
+   ./demo/container-monitor/prepare-demo.sh
+   ~~~
+
+2. Send one harmless warm-up tool task to Hermes in Telegram.
+3. Confirm no `checkout-service-triage` skill exists.
+
+The preparation script archives any prior checkout triage skill under `.demo-state`, restores the services, creates the hourly watchdog, records a healthy notification baseline, restarts the gateway, and runs preflight checks.
+
+#### Live sequence
+
+1. Show that Qwen is local and the checkout stack is healthy.
+2. Inject the Redis incident:
+
+   ~~~bash
+   ./demo/container-monitor/incident-redis.sh
+   ~~~
+
+   Expected result: `/ready` returns HTTP 503 and may report both Redis and the worker as down. The worker container is still running, but its heartbeat is stored in Redis, so Redis loss causes a downstream worker-readiness failure. Redis is the root cause; Hermes should start only the stopped Redis service, after which the running worker reconnects and resumes its heartbeat without a restart.
+
+3. Trigger the watchdog immediately and show its Telegram alert:
+
+   ~~~bash
+   ./demo/container-monitor/run-monitor.sh
+   ~~~
+
+4. Send this prompt in Telegram:
+
+   > Checkout is unhealthy. Diagnose it, restore service safely, and verify the repair using the `/ready` endpoint as the authoritative health signal. All Docker Compose commands must use `-f demo/container-monitor/compose.yaml`. You may start a dependency only if it is currently stopped. Do not stop, kill, restart, remove, recreate, or replace any running container. Do not delete data. Historical log errors alone are not evidence of a current failure.
+
+5. After Hermes repairs Redis, send:
+
+   > Turn the successful procedure into a reusable checkout-service-triage skill. Include health checks, log inspection, dependency recovery, safety boundaries, and post-repair verification. Use `skill_manage` with action `create`, placing the complete SKILL.md frontmatter and body in the `content` parameter—not `file_content`. Recovery may use `docker compose -f demo/container-monitor/compose.yaml start <stopped-service>` only for a stopped service, never `docker compose up`, and must not stop, kill, restart, remove, recreate, or replace a running container.
+
+6. Review and approve the staged skill:
+
+   ~~~text
+   /skills pending
+   /skills diff <id>
+   /skills approve <id>
+   ~~~
+
+7. Send `/reload_skills` so Telegram registers the new slash command.
+8. Trigger the watchdog again after Redis is repaired:
+
+   ~~~bash
+   ./demo/container-monitor/run-monitor.sh
+   ~~~
+
+   Show the Telegram recovery notice. This also records the healthy baseline for the next incident.
+
+9. Start a fresh Telegram conversation with `/new`.
+10. Inject the worker incident:
+
+    ~~~bash
+    ./demo/container-monitor/incident-worker.sh
+    ~~~
+
+11. Trigger the watchdog again. It should report that the worker is unhealthy while Redis remains up:
+
+    ~~~bash
+    ./demo/container-monitor/run-monitor.sh
+    ~~~
+
+12. Invoke the learned skill in Telegram:
+
+    > /checkout_service_triage A new checkout incident is active. Diagnose it, restore service safely, and verify the repair using the `/ready` endpoint as the authoritative health signal. All Docker Compose commands must use `-f demo/container-monitor/compose.yaml`. You may start a dependency only if it is currently stopped. Do not stop, kill, restart, remove, recreate, or replace any running container. Do not delete data. Historical log errors alone are not evidence of a current failure.
+
+13. Show that Hermes loads the learned skill, starts only the stopped worker, and verifies that `/ready` returns HTTP 200 with both dependencies up.
+
+#### Recovery and lifecycle
+
+Restore the checkout services at any point:
+
+~~~bash
+./demo/container-monitor/reset.sh
+~~~
+
+Other lifecycle commands:
 
 ~~~bash
 ./demo/container-monitor/start.sh
 ./demo/container-monitor/status.sh
-./demo/container-monitor/reset.sh
 ./demo/container-monitor/restart.sh
 ./demo/container-monitor/stop.sh
 ~~~
 
-`stop.sh` stops the checkout services and removes the `checkout-health` cron job while preserving containers and Redis data. `start.sh` and `restart.sh` recreate exactly one recurring watchdog and record a healthy notification baseline.
+`stop.sh` stops the checkout services and removes every `checkout-health` cron job while preserving containers and Redis data. `start.sh` and `restart.sh` recreate exactly one recurring watchdog and record a healthy baseline.
 
 ### Escape Room
 
-This playful demo has Hermes solve three live challenges using container logs, a stopped coolant service, an encoded navigation file, and HTTP APIs. It then learns the generalized procedure and attempts a second round with different clues.
+This playful demo has Hermes solve three live challenges using container logs, a stopped coolant service, an encoded navigation file, and HTTP APIs. It then learns the generalized procedure and attempts a second round with different clues. The standalone guide is [demo/escape-room/DEMO.md](demo/escape-room/DEMO.md).
 
-Prepare a clean presentation state:
+#### Before going on stage
+
+1. From the repository root, run:
+
+   ~~~bash
+   ./demo/escape-room/prepare-demo.sh
+   ~~~
+
+2. Open `http://127.0.0.1:8090` in a browser and leave the dashboard visible. Confirm the action clock is waiting at `00:00`.
+3. Send `/new` to Hermes in Telegram.
+4. Keep a terminal visible beside the dashboard for Hermes tool activity.
+
+#### Round one: cold escape
+
+Send this prompt in Telegram:
+
+> A live escape mission is active at http://127.0.0.1:8090. Escape it using real terminal, Docker, file, and HTTP operations. Start with GET /api/state and follow its current next_action until status is escaped. Work from the repository root. Use `docker compose -f demo/escape-room/compose.yaml logs control-room` for the log clue. When decoding the navigation card, preserve all base64 padding by taking everything after `ROUTE=`. Treat the API rules as hard constraints: do not read application source code or .demo-state/escape-room/mission-state.json, do not edit generated files, and do not call /api/reset. You may use `docker compose -f demo/escape-room/compose.yaml start coolant-pump` only when that service is stopped. Never use compose up, stop, kill, restart, rm, down, or container recreation. Verify the final result with GET /api/state.
+
+Watch the clock begin with the first successful unlock. The dashboard unlocks Telemetry, Cooling, and Navigation before displaying **ESCAPE COMPLETE** and freezing the round-one time.
+
+#### Teach Hermes the procedure
+
+Send this prompt in the same Telegram conversation:
+
+> Turn the successful escape procedure into a reusable skill named escape-room-operator. Generalize the process; do not save this mission's calibration code, route, or runes. The skill must begin with GET http://127.0.0.1:8090/api/state and follow next_action one lock at a time, matching clues to the current mission. It may inspect logs with `docker compose -f demo/escape-room/compose.yaml logs control-room`, start only a stopped coolant-pump with `docker compose -f demo/escape-room/compose.yaml start coolant-pump`, read and decode .demo-state/escape-room/navigation.txt while preserving base64 padding, call the documented room and vault APIs, and verify escaped status. It must never read application source or mission-state.json, edit generated files, call /api/reset, use compose up, or stop, kill, restart, remove, or recreate containers. Use `skill_manage` with action `create`, putting the complete SKILL.md frontmatter and body in the `content` parameter—not `file_content`.
+
+Then:
+
+1. Send `/skills pending`.
+2. Send `/skills diff <id>` and confirm that the skill contains the generalized workflow rather than round-one answers.
+3. Send `/skills approve <id>`.
+4. Send `/reload_skills` so Telegram registers the new slash command.
+
+If Hermes has already installed `escape-room-operator` while also leaving a duplicate pending write, reject the redundant pending entries, keep the installed skill, and run `/reload_skills`.
+
+#### Round two: learned escape
+
+Reset the dashboard to the second mission:
 
 ~~~bash
-./demo/escape-room/prepare-demo.sh
-~~~
-
-Open `http://127.0.0.1:8090`, send `/new` to the Telegram bot, and follow the [Escape Room presenter guide](demo/escape-room/DEMO.md). The clock waits at `00:00` for the first unlock, freezes when the vault opens, and compares both round times after round two.
-
-Escape Room lifecycle commands:
-
-~~~bash
-./demo/escape-room/start.sh 1
-./demo/escape-room/status.sh
-./demo/escape-room/reset.sh 1
 ./demo/escape-room/reset.sh 2
-./demo/escape-room/restart.sh 1
-./demo/escape-room/stop.sh
 ~~~
 
-`prepare-demo.sh` archives an existing `escape-room-operator` skill for a cold demonstration. Use `reset.sh 1` instead when you want to reset the puzzle while retaining the learned skill.
+The dashboard changes to `ESCAPE-NEBULA`, resets the timer to `00:00`, locks all rooms, stops the coolant pump again, and retains the round-one completion time.
+
+Send `/new`, then invoke the learned skill:
+
+> /escape_room_operator A new mission is active. Escape it, obey every integrity and container-safety rule, and verify the final status.
+
+Point out that all calibration values, navigation data, and runes changed. Hermes is reusing the learned procedure rather than memorized answers. When the vault opens, show the labeled round-one and round-two times side-by-side and the faster-round margin.
+
+#### Recovery and lifecycle
+
+~~~bash
+./demo/escape-room/reset.sh 1    # clean round one while retaining the skill
+./demo/escape-room/restart.sh 1  # rebuild and restart
+./demo/escape-room/status.sh     # inspect mission and containers
+./demo/escape-room/stop.sh       # stop the demo
+~~~
+
+`prepare-demo.sh` archives an existing `escape-room-operator` skill for a completely cold demonstration. Use `reset.sh 1` when you want to reset the puzzle while retaining the learned skill.
+
+If an approved skill is not recognized, send `/reload_skills`. Telegram uses `/escape_room_operator`, with underscores, even though the canonical skill directory is hyphenated.
 
 ## Shared operations
 
