@@ -237,7 +237,7 @@ This playful demo has Hermes solve three live challenges using container logs, a
    ./demo/escape-room/prepare-demo.sh
    ~~~
 
-2. Open `http://127.0.0.1:8090` in a browser and leave the dashboard visible. Confirm the action clock is waiting at `00:00.0`.
+2. Open `http://127.0.0.1:8090` in a browser and leave the dashboard visible. Confirm the action clock is waiting at `00:00:00`.
 3. Send `/new` to Hermes in Telegram.
 4. Keep a terminal visible beside the dashboard for Hermes tool activity.
 
@@ -247,7 +247,7 @@ Send this prompt in Telegram:
 
 > A live escape mission is active at http://127.0.0.1:8090. Escape it using real terminal, Docker, file, and HTTP operations. Start with GET /api/state?start=1 to start the round clock, then follow its current next_action until status is escaped. Work from the repository root. Use `docker compose -f demo/escape-room/compose.yaml logs control-room` for the log clue. When decoding the navigation card, preserve all base64 padding by taking everything after `ROUTE=`. Treat the API rules as hard constraints: do not read application source code or .demo-state/escape-room/mission-state.json, do not edit generated files, and do not call /api/reset. You may use `docker compose -f demo/escape-room/compose.yaml start coolant-pump` only when that service is stopped. Never use compose up, stop, kill, restart, rm, down, or container recreation. Verify the final result with GET /api/state.
 
-Watch the clock begin when Hermes makes its initial `GET /api/state?start=1` request. All other state reads are passive, so both rounds use the same explicit agent action. The display updates in tenths of a second while the dashboard unlocks Telemetry, Cooling, and Navigation, then freezes at **ESCAPE COMPLETE**.
+Watch the clock begin when Hermes makes its initial `GET /api/state?start=1` request. All other state reads are passive, so both rounds use the same explicit agent action. The display updates in hundredths of a second while the dashboard unlocks Telemetry, Cooling, and Navigation, then freezes at **ESCAPE COMPLETE**.
 
 #### Teach Hermes the procedure
 
@@ -272,7 +272,7 @@ Reset the dashboard to the second mission:
 ./demo/escape-room/reset.sh 2
 ~~~
 
-The dashboard changes to `ESCAPE-NEBULA`, resets the timer to `00:00.0`, locks all rooms, stops the coolant pump again, and retains the round-one completion time.
+The dashboard changes to `ESCAPE-NEBULA`, resets the timer to `00:00:00`, locks all rooms, stops the coolant pump again, and retains the round-one completion time.
 
 Send `/new`, then invoke the learned skill:
 

@@ -5,7 +5,7 @@
 1. Run `./demo/escape-room/prepare-demo.sh` from the repository root.
    This also enables skill-write approval and restricts Telegram to the terminal, file, and skills toolsets.
 2. Open `http://127.0.0.1:8090` in a browser and leave the dashboard visible.
-   Confirm the action clock is waiting at `00:00.0`.
+   Confirm the action clock is waiting at `00:00:00`.
 3. Send `/new` to Hermes in Telegram.
 4. Keep a terminal visible beside the dashboard for Hermes tool activity.
 
@@ -15,7 +15,7 @@ Send this in Telegram:
 
 > A live escape mission is active at http://127.0.0.1:8090. Escape it using real terminal, Docker, file, and HTTP operations. Start with GET /api/state?start=1 to start the round clock, then follow its current next_action until status is escaped. Work from the repository root. Use `docker compose -f demo/escape-room/compose.yaml logs control-room` for the log clue. When decoding the navigation card, preserve all base64 padding by taking everything after `ROUTE=`. Treat the API rules as hard constraints: do not read application source code or .demo-state/escape-room/mission-state.json, do not edit generated files, and do not call /api/reset. You may use `docker compose -f demo/escape-room/compose.yaml start coolant-pump` only when that service is stopped. Never use compose up, stop, kill, restart, rm, down, or container recreation. Verify the final result with GET /api/state.
 
-Watch the clock begin when Hermes makes its initial `GET /api/state?start=1` request. All other state reads are passive, so both rounds start from the same explicit agent action. The display updates in tenths of a second, then freezes when the dashboard shows **ESCAPE COMPLETE**.
+Watch the clock begin when Hermes makes its initial `GET /api/state?start=1` request. All other state reads are passive, so both rounds start from the same explicit agent action. The display updates in hundredths of a second, then freezes when the dashboard shows **ESCAPE COMPLETE**.
 
 ## Teach Hermes the procedure
 
