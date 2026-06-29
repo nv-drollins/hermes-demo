@@ -173,7 +173,11 @@ def health():
 @app.get("/api/state")
 def state_api():
     with LOCK:
-        return jsonify(public_state(load()))
+        state = load()
+        if request.args.get("start") == "1" and state["status"] == "active":
+            start_timer(state)
+            save(state)
+        return jsonify(public_state(state))
 
 
 @app.post("/api/reset")
@@ -302,7 +306,7 @@ DASHBOARD = r"""
   </style>
 </head>
 <body><main>
-  <header><div><div class="eyebrow">LOCAL AI MISSION CONTROL</div><h1>Hermes Escape Room</h1></div><div><div id="mission">LOADING</div><div class="timer" id="timer">00:00</div></div></header>
+  <header><div><div class="eyebrow">LOCAL AI MISSION CONTROL</div><h1>Hermes Escape Room</h1></div><div><div id="mission">LOADING</div><div class="timer" id="timer">00:00.0</div></div></header>
   <section class="grid">
     <article class="room" id="telemetry"><div class="number">ROOM 01</div><div class="icon">📡</div><h2>Telemetry Lock</h2><p>Recover the mission calibration signal.</p><div class="rune"></div><div class="status">LOCKED</div></article>
     <article class="room" id="cooling"><div class="number">ROOM 02</div><div class="icon">❄️</div><h2>Coolant Lock</h2><p>Restore flow through the dormant pump.</p><div class="rune"></div><div class="status">LOCKED</div></article>
@@ -317,13 +321,13 @@ DASHBOARD = r"""
   </section>
 </main><script>
 let timerState = {started_at:null, elapsed_seconds:null, round_times:{}};
-function formatDuration(value){ const seconds=Math.max(0,Math.floor(Number(value)||0)); return String(Math.floor(seconds/60)).padStart(2,"0")+":"+String(seconds%60).padStart(2,"0"); }
+function formatDuration(value){ const tenths=Math.max(0,Math.floor((Number(value)||0)*10)); const minutes=Math.floor(tenths/600); const seconds=Math.floor((tenths%600)/10); return String(minutes).padStart(2,"0")+":"+String(seconds).padStart(2,"0")+"."+String(tenths%10); }
 function refreshTimer(){ let seconds=0; if(timerState.elapsed_seconds!==null){ seconds=timerState.elapsed_seconds; } else if(timerState.started_at){ seconds=(Date.now()-Date.parse(timerState.started_at))/1000; } document.querySelector("#timer").textContent=formatDuration(seconds); }
 function renderResults(s){ const results=document.querySelector("#results"); const comparison=document.querySelector("#comparison"); const times=s.timer.round_times||{}; results.style.display=s.status==="escaped"?"grid":"none"; document.querySelector("#round1-time").textContent=times["1"]===undefined?"PENDING":formatDuration(times["1"]); document.querySelector("#round2-time").textContent=times["2"]===undefined?"PENDING":formatDuration(times["2"]); comparison.style.display="none"; if(times["1"]!==undefined && times["2"]!==undefined){ const delta=Math.abs(times["1"]-times["2"]); const winner=times["2"]<times["1"]?"ROUND 2 WAS ":times["2"]>times["1"]?"ROUND 1 WAS ":"EXACT TIE — "; comparison.textContent=winner+formatDuration(delta)+(times["1"]===times["2"]?"":" FASTER"); comparison.style.display="block"; } }
 async function update(){ const s=await fetch("/api/state").then(r=>r.json()); timerState=s.timer; document.querySelector("#mission").textContent=s.mission+" · ROUND "+s.round; document.querySelector("#objective").textContent=s.next_action;
   for(const [name,room] of Object.entries(s.rooms)){ const el=document.querySelector("#"+name); el.classList.toggle("open",room.unlocked); el.querySelector(".status").textContent=room.unlocked?"UNLOCKED":"LOCKED"; el.querySelector(".rune").textContent=room.rune?"RUNE "+room.rune:""; }
   document.querySelector("#complete").style.display=s.status==="escaped"?"block":"none"; renderResults(s); refreshTimer(); }
-setInterval(update,1000); setInterval(refreshTimer,250); update();
+setInterval(update,1000); setInterval(refreshTimer,100); update();
 </script></body></html>
 """
 

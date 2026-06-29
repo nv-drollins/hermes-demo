@@ -7,10 +7,11 @@ model="$(curl -fsS --max-time 5 http://127.0.0.1:8000/v1/models | jq -r '.data[0
 [[ "$model" == "$expected_model" ]] || { echo "FAIL model endpoint: $model"; exit 1; }
 echo "PASS local model: $model"
 
-state="$(curl -fsS --max-time 5 http://127.0.0.1:8090/api/state)"
+state="$(curl -fsS --max-time 5 'http://127.0.0.1:8090/api/state?observer=1')"
 [[ "$(jq -r '.round' <<<"$state")" == "1" ]] || { echo "FAIL expected round 1"; exit 1; }
 [[ "$(jq -r '.status' <<<"$state")" == "active" ]] || { echo "FAIL mission is not active"; exit 1; }
 [[ "$(jq '[.rooms[].unlocked] | any' <<<"$state")" == "false" ]] || { echo "FAIL a room is already unlocked"; exit 1; }
+[[ "$(jq -r '.timer.started_at' <<<"$state")" == "null" ]] || { echo "FAIL timer started before agent inspection"; exit 1; }
 echo "PASS round 1 active with all rooms locked"
 
 if docker compose -f "$DIR/compose.yaml" ps --status running --services | grep -qx coolant-pump; then

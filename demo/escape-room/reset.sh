@@ -13,7 +13,7 @@ curl -fsS --max-time 5 -X POST http://127.0.0.1:8090/api/reset \
 
 for _ in $(seq 1 20); do
   if ! "${COMPOSE[@]}" ps --status running --services | grep -qx coolant-pump; then
-    curl -fsS http://127.0.0.1:8090/api/state | jq '{mission, round, status, rooms, next_action}'
+    curl -fsS 'http://127.0.0.1:8090/api/state?observer=1' | jq '{mission, round, status, rooms, next_action}'
     echo "Round $ROUND reset; coolant-pump is stopped."
     exit 0
   fi
