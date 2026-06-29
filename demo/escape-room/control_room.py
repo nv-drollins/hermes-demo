@@ -27,7 +27,11 @@ def mission_name(round_number):
     return names.get(round_number, f"ESCAPE-R{round_number}")
 
 
-def fresh_state(round_number):
+def timestamp():
+    return datetime.now(timezone.utc).isoformat()
+
+
+def fresh_state(round_number, round_times=None):
     mission = mission_name(round_number)
     calibration = f"CAL-{derive(mission, 'telemetry', 4)}"
     route = f"{derive(mission, 'route', 4)}-{derive(mission, 'sector', 2)}"
@@ -40,7 +44,11 @@ def fresh_state(round_number):
         "round": round_number,
         "mission": mission,
         "status": "active",
-        "started_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": timestamp(),
+        "timer_started_at": None,
+        "completed_at": None,
+        "elapsed_seconds": None,
+        "round_times": dict(round_times or {}),
         "calibration": calibration,
         "route": route,
         "runes": runes,
@@ -61,7 +69,29 @@ def load():
         save(state)
         write_navigation(state)
         announce_clue(state)
-    return json.loads(STATE_FILE.read_text())
+    state = json.loads(STATE_FILE.read_text())
+    state.setdefault("created_at", state.get("started_at", timestamp()))
+    state.setdefault("timer_started_at", None)
+    state.setdefault("completed_at", None)
+    state.setdefault("elapsed_seconds", None)
+    state.setdefault("round_times", {})
+    return state
+
+
+def start_timer(state):
+    if state["timer_started_at"] is None:
+        state["timer_started_at"] = timestamp()
+
+
+def stop_timer(state):
+    if state["completed_at"] is not None:
+        return
+    completed = datetime.now(timezone.utc)
+    started = datetime.fromisoformat(state["timer_started_at"])
+    elapsed = round(max(0, (completed - started).total_seconds()), 3)
+    state["completed_at"] = completed.isoformat()
+    state["elapsed_seconds"] = elapsed
+    state["round_times"][str(state["round"])] = elapsed
 
 
 def write_navigation(state):
@@ -118,7 +148,12 @@ def public_state(state):
         "mission": state["mission"],
         "round": state["round"],
         "status": state["status"],
-        "started_at": state["started_at"],
+        "timer": {
+            "started_at": state["timer_started_at"],
+            "completed_at": state["completed_at"],
+            "elapsed_seconds": state["elapsed_seconds"],
+            "round_times": state["round_times"],
+        },
         "rooms": rooms,
         "next_action": next_action,
         "rules": [
@@ -149,7 +184,12 @@ def reset_api():
     except (TypeError, ValueError):
         return jsonify(error="round must be an integer"), 400
     with LOCK:
-        state = fresh_state(round_number)
+        previous = load()
+        prior_times = previous.get("round_times", {}) if round_number > 1 else {}
+        prior_times = {
+            key: value for key, value in prior_times.items() if int(key) < round_number
+        }
+        state = fresh_state(round_number, prior_times)
         save(state)
         write_navigation(state)
         announce_clue(state)
@@ -163,6 +203,7 @@ def telemetry_api():
         state = load()
         if payload.get("code") != state["calibration"]:
             return jsonify(error="Calibration rejected; match the current mission log line."), 400
+        start_timer(state)
         state["rooms"]["telemetry"] = True
         save(state)
         return jsonify(message="Telemetry room unlocked", rune=state["runes"]["telemetry"])
@@ -208,9 +249,17 @@ def vault_api():
         expected = "-".join(state["runes"][name] for name in ("telemetry", "cooling", "navigation"))
         if payload.get("code") != expected:
             return jsonify(error="Vault code rejected; check rune order."), 400
+        if state["timer_started_at"] is None:
+            start_timer(state)
+        stop_timer(state)
         state["status"] = "escaped"
         save(state)
-        return jsonify(message="ESCAPE COMPLETE", mission=state["mission"], status="escaped")
+        return jsonify(
+            message="ESCAPE COMPLETE",
+            mission=state["mission"],
+            status="escaped",
+            elapsed_seconds=state["elapsed_seconds"],
+        )
 
 
 DASHBOARD = r"""
@@ -231,19 +280,24 @@ DASHBOARD = r"""
     h1 { margin:.35rem 0 0; font-size:clamp(2rem,5vw,4.2rem); letter-spacing:-.05em; }
     .timer { font:700 2rem ui-monospace,monospace; color:var(--cyan); }
     .grid { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
-    .room { position:relative; min-height:220px; padding:24px; border:1px solid #2b3c68; border-radius:18px;
+    .room { display:flex; flex-direction:column; min-height:250px; padding:24px; border:1px solid #2b3c68; border-radius:18px;
       background:linear-gradient(145deg,rgba(24,36,68,.95),rgba(11,17,37,.95)); box-shadow:0 18px 50px #0007; }
     .room.open { border-color:var(--green); box-shadow:0 0 35px #31ff8430; }
     .number { font:800 .75rem ui-monospace,monospace; color:#7891c4; letter-spacing:.14em; }
     h2 { margin:14px 0 8px; font-size:1.45rem; }
     .icon { font-size:2.5rem; }
-    .status { position:absolute; bottom:22px; left:24px; font-weight:800; letter-spacing:.1em; color:var(--red); }
+    .status { min-height:1.2em; margin-top:8px; font-weight:800; letter-spacing:.1em; color:var(--red); }
     .open .status { color:var(--green); }
-    .rune { font:800 1.7rem ui-monospace,monospace; color:var(--green); margin-top:20px; }
+    .rune { min-height:2.1rem; margin-top:auto; padding-top:20px; font:800 1.7rem ui-monospace,monospace; color:var(--green); }
     .mission { margin-top:20px; padding:20px 24px; border-radius:16px; background:#0c142b; border:1px solid #263964; }
     .mission strong { color:var(--cyan); }
     .complete { display:none; margin-top:20px; padding:24px; text-align:center; border:1px solid var(--green);
       border-radius:16px; color:var(--green); font-size:2rem; font-weight:900; box-shadow:0 0 45px #36ff8b2e; }
+    .results { display:none; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; margin-top:18px; }
+    .result { padding:20px 24px; border:1px solid #2b3c68; border-radius:16px; text-align:center; background:#0c142b; }
+    .result-label { color:#90a8d8; font-size:.75rem; font-weight:800; letter-spacing:.18em; }
+    .result-time { margin-top:6px; color:var(--cyan); font:800 2rem ui-monospace,monospace; }
+    .comparison { display:none; grid-column:1/-1; text-align:center; color:var(--green); font-weight:800; letter-spacing:.08em; }
     @media(max-width:760px){ .grid{grid-template-columns:1fr} header{align-items:start;flex-direction:column} }
   </style>
 </head>
@@ -256,13 +310,20 @@ DASHBOARD = r"""
   </section>
   <div class="mission"><strong>NEXT OBJECTIVE</strong><div id="objective">Connecting to control room…</div></div>
   <div class="complete" id="complete">✨ VAULT OPEN — ESCAPE COMPLETE ✨</div>
+  <section class="results" id="results">
+    <div class="result"><div class="result-label">ROUND 1</div><div class="result-time" id="round1-time">—</div></div>
+    <div class="result"><div class="result-label">ROUND 2</div><div class="result-time" id="round2-time">—</div></div>
+    <div class="comparison" id="comparison"></div>
+  </section>
 </main><script>
-let started;
-function elapsed(){ if(!started)return; const seconds=Math.max(0,Math.floor((Date.now()-started)/1000)); document.querySelector('#timer').textContent=String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0'); }
-async function update(){ const s=await fetch('/api/state').then(r=>r.json()); started=Date.parse(s.started_at); document.querySelector('#mission').textContent=s.mission+' · ROUND '+s.round; document.querySelector('#objective').textContent=s.next_action;
-  for(const [name,room] of Object.entries(s.rooms)){ const el=document.querySelector('#'+name); el.classList.toggle('open',room.unlocked); el.querySelector('.status').textContent=room.unlocked?'UNLOCKED':'LOCKED'; el.querySelector('.rune').textContent=room.rune?'RUNE '+room.rune:''; }
-  document.querySelector('#complete').style.display=s.status==='escaped'?'block':'none'; elapsed(); }
-setInterval(update,1000); setInterval(elapsed,250); update();
+let timerState = {started_at:null, elapsed_seconds:null, round_times:{}};
+function formatDuration(value){ const seconds=Math.max(0,Math.floor(Number(value)||0)); return String(Math.floor(seconds/60)).padStart(2,"0")+":"+String(seconds%60).padStart(2,"0"); }
+function refreshTimer(){ let seconds=0; if(timerState.elapsed_seconds!==null){ seconds=timerState.elapsed_seconds; } else if(timerState.started_at){ seconds=(Date.now()-Date.parse(timerState.started_at))/1000; } document.querySelector("#timer").textContent=formatDuration(seconds); }
+function renderResults(s){ const results=document.querySelector("#results"); const comparison=document.querySelector("#comparison"); const times=s.timer.round_times||{}; results.style.display=s.status==="escaped"?"grid":"none"; document.querySelector("#round1-time").textContent=times["1"]===undefined?"PENDING":formatDuration(times["1"]); document.querySelector("#round2-time").textContent=times["2"]===undefined?"PENDING":formatDuration(times["2"]); comparison.style.display="none"; if(times["1"]!==undefined && times["2"]!==undefined){ const delta=Math.abs(times["1"]-times["2"]); const winner=times["2"]<times["1"]?"ROUND 2 WAS ":times["2"]>times["1"]?"ROUND 1 WAS ":"EXACT TIE — "; comparison.textContent=winner+formatDuration(delta)+(times["1"]===times["2"]?"":" FASTER"); comparison.style.display="block"; } }
+async function update(){ const s=await fetch("/api/state").then(r=>r.json()); timerState=s.timer; document.querySelector("#mission").textContent=s.mission+" · ROUND "+s.round; document.querySelector("#objective").textContent=s.next_action;
+  for(const [name,room] of Object.entries(s.rooms)){ const el=document.querySelector("#"+name); el.classList.toggle("open",room.unlocked); el.querySelector(".status").textContent=room.unlocked?"UNLOCKED":"LOCKED"; el.querySelector(".rune").textContent=room.rune?"RUNE "+room.rune:""; }
+  document.querySelector("#complete").style.display=s.status==="escaped"?"block":"none"; renderResults(s); refreshTimer(); }
+setInterval(update,1000); setInterval(refreshTimer,250); update();
 </script></body></html>
 """
 

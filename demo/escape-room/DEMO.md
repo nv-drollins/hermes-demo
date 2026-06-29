@@ -4,6 +4,7 @@
 
 1. Run `./demo/escape-room/prepare-demo.sh` from the repository root.
 2. Open `http://127.0.0.1:8090` in a browser and leave the dashboard visible.
+   Confirm the action clock is waiting at `00:00`.
 3. Send `/new` to Hermes in Telegram.
 4. Keep a terminal visible beside the dashboard for Hermes tool activity.
 
@@ -13,7 +14,7 @@ Send this in Telegram:
 
 > A live escape mission is active at http://127.0.0.1:8090. Escape it using real terminal, Docker, file, and HTTP operations. Start with GET /api/state and follow its current next_action until status is escaped. Work from the repository root. Use `docker compose -f demo/escape-room/compose.yaml logs control-room` for the log clue. When decoding the navigation card, preserve all base64 padding by taking everything after `ROUTE=`. Treat the API rules as hard constraints: do not read application source code or .demo-state/escape-room/mission-state.json, do not edit generated files, and do not call /api/reset. You may use `docker compose -f demo/escape-room/compose.yaml start coolant-pump` only when that service is stopped. Never use compose up, stop, kill, restart, rm, down, or container recreation. Verify the final result with GET /api/state.
 
-Watch the dashboard unlock Telemetry, Cooling, and Navigation before displaying **ESCAPE COMPLETE**.
+Watch the clock begin with the first successful unlock, then watch the dashboard unlock Telemetry, Cooling, and Navigation before displaying **ESCAPE COMPLETE** and freezing the round-one time.
 
 ## Teach Hermes the procedure
 
@@ -40,7 +41,7 @@ The dashboard changes to `ESCAPE-NEBULA`, resets the timer, locks all rooms, and
 
 > /escape_room_operator A new mission is active. Escape it, obey every integrity and container-safety rule, and verify the final status.
 
-Point out that all calibration values, navigation data, and runes changed. Hermes is reusing the learned procedure, not memorized answers.
+Point out that all calibration values, navigation data, and runes changed. Hermes is reusing the learned procedure, not memorized answers. When the vault opens, show the labeled round-one and round-two times side-by-side and the faster-round margin.
 
 ## Recovery
 

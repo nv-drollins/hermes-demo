@@ -9,6 +9,7 @@ The browser dashboard at `http://127.0.0.1:8090` tracks three locks:
 3. **Navigation:** a generated base64 route card must be read and decoded.
 
 Each room reveals a mission-specific rune. Joining the runes opens the vault through a real HTTP API. Round two changes every clue and rune while preserving the general procedure, making skill reuse visible without replaying answers.
+The action clock remains at `00:00` until Hermes unlocks the first room and freezes when the vault opens. The round-one result survives the round-two reset; after round two, the dashboard displays both labeled times side-by-side with the faster-round margin.
 
 ## Lifecycle
 
